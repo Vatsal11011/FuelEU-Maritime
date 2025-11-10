@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// routes: basic data
+model Route {
+  id            String  @id @default(cuid())
+  routeId       String  @map("route_id")
+  year          Int
+  ghgIntensity  Decimal @map("ghg_intensity") @db.Decimal(20, 6)
+  isBaseline    Boolean @map("is_baseline")
+
+  @@map("routes")
+}
+
+// ship_compliance: computed CB records
+model ShipCompliance {
+  id        String  @id @default(cuid())
+  shipId    String  @map("ship_id")
+  year      Int
+  cbGco2eq  Decimal @map("cb_gco2eq") @db.Decimal(20, 6)
+
+  @@map("ship_compliance")
+}
+
+// bank_entries: banked surplus
+model BankEntry {
+  id            String  @id @default(cuid())
+  shipId        String  @map("ship_id")
+  year          Int
+  amountGco2eq  Decimal @map("amount_gco2eq") @db.Decimal(20, 6)
+
+  @@map("bank_entries")
+}
+
+// pools: pool registry
+model Pool {
+  id         String   @id @default(cuid())
+  year       Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  members    PoolMember[]
+
+  @@map("pools")
+}
+
+// pool_members: allocations
+model PoolMember {
+  poolId    String  @map("pool_id")
+  shipId    String  @map("ship_id")
+  cbBefore  Decimal @map("cb_before") @db.Decimal(20, 6)
+  cbAfter   Decimal @map("cb_after") @db.Decimal(20, 6)
+
+  pool      Pool    @relation(fields: [poolId], references: [id])
+
+  @@id([poolId, shipId])
+  @@map("pool_members")
+}
